@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-main>
+                <v-container class="text-center">
+                    <v-row v-for="(date, dateIndex) in everyOtherFriday2024" :key="`date-${date}-${dateIndex}`">
+                        <v-col>
+                            {{date}} :
+                            <span v-if="dateIndex % 2 === 0">{{formatCurrency((((dateIndex+2) / 2) *
+                                1000)-381.96)}} (+$618.04)</span>
+                            <span v-if="dateIndex % 2 === 1">{{formatCurrency(((dateIndex+1) / 2) * 1000)}} (+$381.96)</span>
+                        </v-col>
+                    </v-row>
+                </v-container>
+            </v-main>
+        </v-app>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script>
+        function formatCurrency(number) {
+            return number.toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            });
+        }
+        function simplifyDate(date) {
+            const day = date.getDate();
+            const month = date.getMonth() + 1; // Months are zero-indexed, so we add 1
+            const year = date.getFullYear();
+
+            // Format the date components as a string
+            const formattedDate = `${month}/${day}/${year}`;
+
+            return formattedDate;
+        }
+        function getEveryOtherFriday(year) {
+            const result = [];
+            let currentDate = new Date(year, 0, 8); // January 1st of the given year
+
+            // Loop through each day of the year
+            while (currentDate.getFullYear() === year) {
+                if (currentDate.getDay() === 5) { // Check if it's a Friday
+                    result.push(simplifyDate(new Date(currentDate))); // Add the date to the result array
+                    currentDate.setDate(currentDate.getDate() + 14); // Move forward 14 days (every other Friday)
+                } else {
+                    currentDate.setDate(currentDate.getDate() + 1); // Move to the next day
+                }
+            }
+
+            return result;
+        }
+
+        const year = 2024;
+        const everyOtherFriday2024 = getEveryOtherFriday(year);
+
+    </script>
+    <script>
+        new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data: function () {
+                return {
+                    everyOtherFriday2024,
+                }
+            },
+            methods: {
+                formatCurrency,
+            },
+        })
+    </script>
+</body>
+
+</html>
