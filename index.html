@@ -8,19 +8,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
 </head>
 
-<body>
+<body style="background-color: #121212;">
     <div id="app">
         <v-app>
             <v-main>
                 <v-container class="text-center">
-                    <v-row v-for="(date, dateIndex) in everyOtherFriday2024" :key="`date-${date}-${dateIndex}`">
+                    <v-row>
+                        <v-col class="text-h5">{{formatCurrency(currentPrice)}}</v-col>
+                    </v-row>
+                </v-container>
+                <v-divider></v-divider>
+                <v-container class="text-center" v-for="(obj, dateIndex) in everyOtherFriday2024"
+                    :key="`date-${obj.date}-${dateIndex}`">
+                    <v-row>
+                        <v-col class="text-h6">{{simplifyDate(obj.date)}}</v-col>
+                    </v-row>
+                    <v-row>
                         <v-col>
-                            {{date}} :
-                            <span v-if="dateIndex % 2 === 0">{{formatCurrency((((dateIndex+2) / 2) *
-                                1000)-381.96)}} (+$618.04)</span>
-                            <span v-if="dateIndex % 2 === 1">{{formatCurrency(((dateIndex+1) / 2) * 1000)}} (+$381.96)</span>
+                            <div>$ Invest</div>
+                            <div>{{formatCurrency(obj.investAmount)}}</div>
+                        </v-col>
+                        <v-col>
+                            <div>$ Sum</div>
+                            <div>{{formatCurrency(obj.culmination)}}</div>
                         </v-col>
                     </v-row>
+                    <v-row>
+                        <v-col>
+                            <div>BTC Invest</div>
+                            <div>{{obj.btc}} BTC</div>
+                        </v-col>
+                        <v-col>
+                            <div>BTC Sum</div>
+                            <div>{{obj.btcCulmination}} BTC</div>
+                        </v-col>
+                    </v-row>
+                    <v-row v-if="currentPrice != null">
+                        <v-col>
+                            <div>Current Worth</div>
+                            <div>{{formatCurrency(obj.btcCulmination * currentPrice)}}</div>
+                        </v-col>
+                    </v-row>
+                    <v-divider></v-divider>
                 </v-container>
             </v-main>
         </v-app>
@@ -29,7 +58,30 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
     <script>
+
+
+        function getInvestAmount(originalDate) {
+            // Your original date
+            // var originalDate = new Date('2024-04-26'); // Example date, replace with your date
+
+            // Adding 14 days to the original date
+            var newDate = new Date(originalDate);
+            newDate.setDate(newDate.getDate() + 14);
+
+            // Check if the month of the new date is different from the original date
+            if (newDate.getMonth() !== originalDate.getMonth()) {
+                // console.log("The date plus 14 days crosses over into a new month.");
+                return 381.96;
+            } else {
+                // console.log("The date plus 14 days does not cross over into a new month.");
+                return 618.04;
+            }
+        }
+
         function formatCurrency(number) {
+            if (number == undefined) {
+                return null;
+            }
             return number.toLocaleString('en-US', {
                 style: 'currency',
                 currency: 'USD'
@@ -41,7 +93,7 @@
             const year = date.getFullYear();
 
             // Format the date components as a string
-            const formattedDate = `${month}/${day}/${year}`;
+            const formattedDate = `${month < 10 ? "0" + month : month}/${day < 10 ? "0" + day : day}/${year}`;
 
             return formattedDate;
         }
@@ -52,7 +104,15 @@
             // Loop through each day of the year
             while (currentDate.getFullYear() === year) {
                 if (currentDate.getDay() === 5) { // Check if it's a Friday
-                    result.push(simplifyDate(new Date(currentDate))); // Add the date to the result array
+                    result.push(
+                        {
+                            date: new Date(currentDate),
+                            investAmount: 0,
+                            culmination: 0,
+                            btc: 0,
+                            btcCulmination: 0,
+                        }
+                    ); // Add the date to the result array
                     currentDate.setDate(currentDate.getDate() + 14); // Move forward 14 days (every other Friday)
                 } else {
                     currentDate.setDate(currentDate.getDate() + 1); // Move to the next day
@@ -65,18 +125,73 @@
         const year = 2024;
         const everyOtherFriday2024 = getEveryOtherFriday(year);
 
+        const pricesOnFriday = [
+            42842.48, // 01/12/2024
+            41856.69, // 01/26/2024
+            47153.46, // 02/09/2024
+            50723.75, // 02/23/2024
+            68357.70, // 03/08/2024
+            63485.12, // 03/22/2024
+            67820.62, // 04/05/2024
+            63818.01, // 04/19/2024
+        ];
+
+        everyOtherFriday2024.length = pricesOnFriday.length;
+
+        for (let i = 0; i < everyOtherFriday2024.length; i += 1) {
+            everyOtherFriday2024[i].investAmount = getInvestAmount(everyOtherFriday2024[i].date);
+            if (pricesOnFriday[i] !== undefined) {
+                everyOtherFriday2024[i].btc = (
+                    everyOtherFriday2024[i].investAmount /
+                    pricesOnFriday[i]
+                ).toFixed(8) * 1;
+            }
+        }
+
+        for (let i = 0; i < everyOtherFriday2024.length; i += 1) {
+            let sum = 0;
+            let btcSum = 0;
+            for (let j = 0; j <= i; j += 1) {
+                sum += everyOtherFriday2024[j].investAmount;
+                btcSum += everyOtherFriday2024[j].btc;
+            }
+            everyOtherFriday2024[i].culmination = sum;
+            everyOtherFriday2024[i].btcCulmination = btcSum.toFixed(8) * 1;
+        }
+
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.3.5/axios.min.js"
+        integrity="sha512-nnNHpffPSgINrsR8ZAIgFUIMexORL5tPwsfktOTxVYSv+AUAILuFYWES8IHl+hhIhpFGlKvWFiz9ZEusrPcSBQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         new Vue({
             el: '#app',
-            vuetify: new Vuetify(),
+            vuetify: new Vuetify({
+                theme: { dark: true, }
+            }),
+            mounted: function () {
+                const _this = this;
+                axios.get('https://api.coindesk.com/v1/bpi/currentprice.json')
+                    .then(r => r.data)
+                    .then(data => {
+                        _this.currentPrice = data.bpi.USD.rate_float;
+                    })
+                    .catch(() => {
+                        _this.currentPrice = _this.nyxbt;
+                    })
+            },
             data: function () {
                 return {
+                    pricesOnFriday,
                     everyOtherFriday2024,
+                    currentPrice: undefined,
+                    nyxbt: 64481.71, // now statmuse
                 }
             },
             methods: {
                 formatCurrency,
+                getInvestAmount,
+                simplifyDate,
             },
         })
     </script>
